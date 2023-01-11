@@ -3,13 +3,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-typedef struct MenuWindow
-{
-    GtkWidget *window;
-    GtkWidget *grid;
-    GtkWidget *button;
-}MenuWindow;
-
 int number = 0;
 
 //function updating label with new number value
