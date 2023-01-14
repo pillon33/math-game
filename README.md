@@ -5,8 +5,9 @@ Game that helps you learn math operations (addition, subtraction, multiplication
 
 ## Frontend
   - Main menu with four buttons :heavy_check_mark:
-  - Options panel with two sliders :x:
-  - Panel to choose game type :x:
+  - Options panel with two sliders :heavy_check_mark:
+  - Panel to choose game type :heavy_check_mark:
+  - Panel to choose operation :x:
   - Question window :x:
   - Good answer window :x:
   - Bad answer window :x:
@@ -16,7 +17,9 @@ Game that helps you learn math operations (addition, subtraction, multiplication
 ## Backend
   - Saving and loadnig options from a file :x:
   - Saving and loading best scores from a file :x:
-  - All game types :x:
+  - Learning game type :x:
+  - Test game type :x:
+  - Arcade game type :x:
   - Switching between all panels :x:
   
 # Game types
