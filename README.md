@@ -4,23 +4,23 @@ Game that helps you learn math operations (addition, subtraction, multiplication
 # TODO
 
 ## Frontend
-  - Main menu with four buttons :heavy_check_mark:
-  - Options panel with two sliders :heavy_check_mark:
-  - Panel to choose game type :heavy_check_mark:
-  - Panel to choose operation :x:
-  - Question window :x:
-  - Good answer window :x:
-  - Bad answer window :x:
-  - Leaderboard tab :x:
-  - Entering initials for leaderboard :x:
+  - Main menu with four buttons ✔️
+  - Options panel with two sliders ✔️
+  - Panel to choose game type ✔️
+  - Panel to choose operation ❌
+  - Question window ❌
+  - Good answer window ❌
+  - Bad answer window ❌
+  - Leaderboard tab ❌
+  - Entering initials for leaderboard ❌
   
 ## Backend
-  - Saving and loadnig options from a file :x:
-  - Saving and loading best scores from a file :x:
-  - Learning game type :x:
-  - Test game type :x:
-  - Arcade game type :x:
-  - Switching between all panels :x:
+  - Saving and loadnig options from a file ✔️
+  - Saving and loading best scores from a file ❌
+  - Learning game type ❌
+  - Test game type ❌
+  - Arcade game type ❌
+  - Switching between all panels ❌
   
 # Game types
 
