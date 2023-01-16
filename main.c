@@ -12,34 +12,140 @@ GtkWidget *slider2;     //Game length slider
 double difficulty = 1;  //value of game difficulty
 double length = 1;      //value of game length
 
-json_object *ldboard;
+json_object *ldboard;   //json object storing leaderboard data
+
+char *game;         //string determinig game type
+char *operation;    //string determinig which operation user wants to focus on
 
 void init_menu();
 void init_play();
 void init_settings();
+void init_operation_choice();
 void settings_back();
 void save_settings();
 void read_settings();
 void init_leaderboard();
 void save_leaderboard();
 void read_leaderboard();
+void plus();
+void minus();
+void mult();
+void division();
+void mixed();
 
 // function called when learning game type is chosen
-void nauka()
+void learn()
 {
-    // code here //
+    game = "learn";
+    init_operation_choice();
 }
 
 // function called when test game type is chosen
 void test()
 {
-    // code here //
+    game = "test";
+    init_operation_choice();
 }
 
 // function called when arcade game type is chosen
 void arcade()
 {
-    // code here //
+    game = "arcade";
+}
+
+void init_operation_choice()
+{
+    gtk_widget_destroy(fixed);
+
+    GtkWidget *button;
+
+    //initialize fixed
+    fixed = gtk_fixed_new();
+
+    gtk_container_add(GTK_CONTAINER(window), fixed);
+
+    //first button
+    button = gtk_button_new_with_label("+");
+    g_signal_connect (button, "clicked", G_CALLBACK (plus), NULL);
+
+    gtk_widget_set_size_request(button, 50, 50);
+
+    gtk_fixed_put(GTK_FIXED(fixed), button, 330, 150);
+
+
+    //second button
+    button = gtk_button_new_with_label("-");
+    g_signal_connect (button, "clicked", G_CALLBACK (minus), NULL);
+
+    gtk_widget_set_size_request(button, 50, 50);
+
+    gtk_fixed_put(GTK_FIXED(fixed), button, 410, 150);
+
+
+    //third button
+    button = gtk_button_new_with_label("*");
+    g_signal_connect (button, "clicked", G_CALLBACK (mult), NULL);
+
+    gtk_widget_set_size_request(button, 50, 50);
+
+    gtk_fixed_put(GTK_FIXED(fixed), button, 330, 210);
+
+
+    //fourth button
+    button = gtk_button_new_with_label("/");
+    g_signal_connect (button, "clicked", G_CALLBACK (division), NULL);
+
+    gtk_widget_set_size_request(button, 50, 50);
+
+    gtk_fixed_put(GTK_FIXED(fixed), button, 410, 210);
+
+
+    //fifth button
+    button = gtk_button_new_with_label("Mieszane");
+    g_signal_connect (button, "clicked", G_CALLBACK (mixed), NULL);
+
+    gtk_widget_set_size_request(button, 130, 50);
+
+    gtk_fixed_put(GTK_FIXED(fixed), button, 330, 270);
+
+
+    //sixth button
+    button = gtk_button_new_with_label("Powrót");
+    g_signal_connect (button, "clicked", G_CALLBACK (init_play), NULL);
+
+    gtk_widget_set_size_request(button, 130, 50);
+
+    gtk_fixed_put(GTK_FIXED(fixed), button, 330, 330);
+
+    gtk_widget_show_all(window);
+
+    g_signal_connect(G_OBJECT(window), "destroy",
+            G_CALLBACK(gtk_main_quit), NULL);
+}
+
+void plus()
+{
+    operation = '+';
+}
+
+void minus()
+{
+    operation = '-';
+}
+
+void mult()
+{
+    operation = '/';
+}
+
+void division()
+{
+    operation = '*';
+}
+
+void mixed()
+{
+    operation = 'mixed';
 }
 
 void init_play()
@@ -55,7 +161,7 @@ void init_play()
 
     //create first button
     button = gtk_button_new_with_label("Nauka");
-    g_signal_connect (button, "clicked", G_CALLBACK (nauka), NULL);
+    g_signal_connect (button, "clicked", G_CALLBACK (learn), NULL);
 
     gtk_widget_set_size_request(button, 160, 32);
 
