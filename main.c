@@ -33,8 +33,7 @@ void mult();
 void division();
 void mixed();
 void question();
-void good_answer();
-void bad_answer();
+void answer();
 
 void question()
 {
@@ -53,7 +52,7 @@ void question()
 
     entry = gtk_entry_new();
     gtk_widget_set_size_request(entry, 160, 32);
-    g_signal_connect (entry, "activate", G_CALLBACK (good_answer), NULL);
+    g_signal_connect (entry, "activate", G_CALLBACK (answer), NULL);
     gtk_fixed_put(GTK_FIXED(fixed), entry, 310, 220);
 
     gtk_window_set_focus(GTK_WINDOW(window), entry);
@@ -64,15 +63,35 @@ void question()
             G_CALLBACK(gtk_main_quit), NULL);
 }
 
-void good_answer()
+void answer()
 {
-    // code //
-    printf("dziala");
-}
+    GtkWidget *image;
+    GtkWidget *button;
+    GdkPixbuf *pixbuf;
 
-void bad_answer()
-{
-    // code //
+    gtk_widget_destroy(fixed);
+
+    fixed = gtk_fixed_new();
+
+    gtk_container_add(GTK_CONTAINER(window), fixed);
+
+    pixbuf = gdk_pixbuf_new_from_file("./resources/incorrect.jpg", NULL);
+
+    pixbuf = gdk_pixbuf_scale_simple(pixbuf, 300, 300, GDK_INTERP_BILINEAR);
+
+    image = gtk_image_new_from_pixbuf(pixbuf);
+
+    gtk_fixed_put(GTK_FIXED(fixed), image, 220, 80);
+
+    button = gtk_button_new_with_label("Kontynuuj");
+    gtk_widget_set_size_request(button, 160, 32);
+    gtk_fixed_put(GTK_FIXED(fixed), button, 310, 400);
+    g_signal_connect (button, "clicked", G_CALLBACK (question), NULL);
+
+    gtk_widget_show_all(window);
+
+    g_signal_connect(G_OBJECT(window), "destroy",
+            G_CALLBACK(gtk_main_quit), NULL);
 }
 
 // function called when learning game type is chosen
