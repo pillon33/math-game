@@ -8,9 +8,9 @@ Game that helps you learn math operations (addition, subtraction, multiplication
   - Options panel with two sliders ✔️
   - Panel to choose game type ✔️
   - Panel to choose operation ✔️
-  - Question window ❌
-  - Good answer window ❌
-  - Bad answer window ❌
+  - Question window ✔️
+  - Good answer window ✔️
+  - Bad answer window ✔️
   - Leaderboard tab ❌
   - Entering initials for leaderboard ❌
   
