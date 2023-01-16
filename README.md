@@ -17,8 +17,8 @@ Game that helps you learn math operations (addition, subtraction, multiplication
 ## Backend
   - Saving and loadnig options from a file ✔️
   - Saving and loading best scores from a file ❌
-  - Learning game type ❌
-  - Test game type ❌
+  - Learning game type ✔️
+  - Test game type ✔️
   - Arcade game type ❌
   
 # Game types
@@ -48,14 +48,14 @@ This option adjusts the difficulty. This means that in each question result rang
 ### Easy
   - Range <1, 50> for addition and subtraction.
   - Range <1, 100> for multiplication.
-  - Range <1, 20> for division.
+  - Range <1, 5> for division.
   
 ### Medium
   - Range <30, 100> for addition and subtraction.
   - Range <49, 400> for multiplication.
-  - Range <10, 40> for division.
+  - Range <2, 10> for division.
   
 ### Hard
   - Range <50, 150> for addition and subtraction.
   - Range <100, 10 000> for multiplication.
-  - Range <20, 60> for division.
+  - Range <5, 20> for division.

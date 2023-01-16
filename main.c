@@ -3,19 +3,50 @@
 #include <stdlib.h>
 #include <time.h>
 #include <json-c/json.h>
+#include <stdbool.h>
 
 GtkWidget *window;
 GtkWidget *fixed;
 GtkWidget *slider1;     //Game difficulty slider
 GtkWidget *slider2;     //Game length slider
+GtkWidget *entry;
 
-double difficulty = 1;  //value of game difficulty
-double length = 1;      //value of game length
+int difficulty = 1;  //value of game difficulty
+int length = 1;      //value of game length
+
+int ranges[3][4][2] = {
+    // add       sub        mult         div
+    { {1, 25},   {1, 50},   {1, 10},    {1, 5} },      //easy
+    { {15, 50},  {30, 100}, {7, 20},    {2, 10} },     //medium
+    { {25, 75},  {50, 150}, {10, 100},  {5, 20} }      //hard
+};
+
+char operations[4] = {'+', '-', '*', '/'};
 
 json_object *ldboard;   //json object storing leaderboard data
 
+
+//structure representing question 
+//for example if operation='+' number1 + number2 = expected_answer
+//if entered_answer == expected_answer answered_correctly = true (otherwise it is set to false)
+typedef struct Question
+{
+    struct Question *prev;
+    int number1;
+    int number2;
+    int expected_result;
+    char operation;
+    bool answered_correctly;
+    struct Question *next;
+}Question;
+
+Question *head = NULL;     //head of linked list
+Question *tail = NULL;     //tail of linked list
+Question *iter = NULL;     //current question
+typedef struct Question *node;        //linked list node
+
 char *game;         //string determinig game type
-char *operation;    //string determinig which operation user wants to focus on
+char operation;    //string determinig which operation user wants to focus on
 
 void init_menu();
 void init_play();
@@ -32,13 +63,14 @@ void minus();
 void mult();
 void division();
 void mixed();
-void question();
+void init_question();
 void answer();
+void get_question();
+void generate_questions();
 
-void question()
+void init_question()
 {
     GtkWidget *label;
-    GtkWidget *entry;
 
     gtk_widget_destroy(fixed);
 
@@ -46,8 +78,9 @@ void question()
 
     gtk_container_add(GTK_CONTAINER(window), fixed);
 
-
-    label = gtk_label_new("2 + 2 = ?");
+    char *text;
+    text = g_strdup_printf ("%d %c %d = ?", iter->number1, iter->operation, iter->number2);
+    label = gtk_label_new(text);
     gtk_fixed_put(GTK_FIXED(fixed), label, 350, 200);
 
     entry = gtk_entry_new();
@@ -68,6 +101,17 @@ void answer()
     GtkWidget *image;
     GtkWidget *button;
     GdkPixbuf *pixbuf;
+    gchar *ans;
+    gchar *expected;
+    char *path;
+
+    expected = g_strdup_printf ("%d", iter->expected_result);
+    ans = gtk_editable_get_chars(GTK_EDITABLE(entry), 0, -1);
+
+    if (strcmp(ans, expected) == 0)
+    {
+        iter->answered_correctly = true;
+    }
 
     gtk_widget_destroy(fixed);
 
@@ -75,7 +119,17 @@ void answer()
 
     gtk_container_add(GTK_CONTAINER(window), fixed);
 
-    pixbuf = gdk_pixbuf_new_from_file("./resources/incorrect.jpg", NULL);
+    if (iter->answered_correctly)
+    {
+        path = "./resources/correct.jpg";
+    }
+    else
+    {
+        path = "./resources/incorrect.jpg";
+    }
+    
+    
+    pixbuf = gdk_pixbuf_new_from_file(path, NULL);
 
     pixbuf = gdk_pixbuf_scale_simple(pixbuf, 300, 300, GDK_INTERP_BILINEAR);
 
@@ -86,32 +140,37 @@ void answer()
     button = gtk_button_new_with_label("Kontynuuj");
     gtk_widget_set_size_request(button, 160, 32);
     gtk_fixed_put(GTK_FIXED(fixed), button, 310, 400);
-    g_signal_connect (button, "clicked", G_CALLBACK (question), NULL);
+    g_signal_connect (button, "clicked", G_CALLBACK (init_question), NULL);
 
     gtk_widget_show_all(window);
 
     g_signal_connect(G_OBJECT(window), "destroy",
             G_CALLBACK(gtk_main_quit), NULL);
+
+    iter = iter->next;
 }
 
 // function called when learning game type is chosen
 void learn()
 {
-    game = "learn";
+    read_settings();    //update all game parameters
+    game = "learn";     //set game type
     init_operation_choice();
 }
 
 // function called when test game type is chosen
 void test()
 {
-    game = "test";
+    read_settings();    //update all game parameters
+    game = "test";      //set game type
     init_operation_choice();
 }
 
 // function called when arcade game type is chosen
 void arcade()
 {
-    game = "arcade";
+    read_settings();    //update all game parameters
+    game = "arcade";    //set game type
 }
 
 void init_operation_choice()
@@ -184,34 +243,157 @@ void init_operation_choice()
             G_CALLBACK(gtk_main_quit), NULL);
 }
 
+void generate_questions()
+{
+    //reset state after previous game
+    head = NULL;
+    tail = NULL;
+    iter = NULL;
+
+    //generating questions
+    get_question();
+    tail = iter;        //first element
+
+    for (int i = 0; i < length*5 - 1; i++)
+    {
+        get_question();
+    }
+    //finished generating questions
+
+    head = iter;        //last element
+    iter = tail;        //reset iterator before the game
+}
+
 void plus()
 {
-    operation = "+";
-    question();
+    operation = '+';
+
+    generate_questions();
+
+    init_question();
 }
 
 void minus()
 {
-    operation = "-";
-    question();
+    operation = '-';
+
+    generate_questions();
+
+    init_question();
 }
 
 void mult()
 {
-    operation = "/";
-    question();
+    operation = '*';
+
+    generate_questions();
+
+    init_question();
 }
 
 void division()
 {
-    operation = "*";
-    question();
+    operation = '/';
+
+    generate_questions();
+
+    init_question();
 }
 
 void mixed()
 {
-    operation = "mixed";
-    question();
+    //reset state after previous game
+    head = NULL;
+    tail = NULL;
+    iter = NULL;
+
+    //generating questions
+    operation = operations[rand()%4];
+    get_question();
+    tail = iter;        //first element
+
+    for (int i = 0; i < length*5 - 1; i++)
+    {
+        operation = operations[rand()%4];
+        get_question();
+    }
+    //finished generating questions
+
+    head = iter;        //last element
+    iter = tail;        //reset iterator before the game
+
+    init_question();
+}
+
+//generates data for one question
+void get_question()
+{
+    int idx;
+    int delta;
+
+    //get value range from table
+    switch (operation)
+    {
+    case '+':
+        idx = 0;
+        break;
+    case '-':
+        idx = 1;
+        break;
+    case '*':
+        idx = 2;
+        break;
+    case '/':
+        idx = 3;
+    default:
+        break;
+    }
+
+    int left_range = ranges[difficulty-1][idx][0];
+    int right_range = ranges[difficulty-1][idx][1];
+
+    node q;
+    q = (node)malloc(sizeof(struct Question)); // allocate memory using malloc()
+
+    q->next = NULL;
+    q->prev = NULL;
+
+    //make linked list connection
+    if (iter)
+    {
+        iter->next = q;
+        q->prev = iter;
+    }
+    
+    iter = q;
+
+    switch (operation)
+    {
+    case '+':
+        q->number1 = rand()%right_range + left_range;   //generates two random numbers in given range
+        q->number2 = rand()%right_range + left_range;
+        q->expected_result = q->number1 + q->number2;
+        break;
+    case '-':
+        q->expected_result = rand()%right_range + left_range;   //generates random number in given range
+        q->number2 = rand()%100 + 1;
+        q->number1 = q->number2 + q->expected_result;
+        break;
+    case '*':
+        q->number1 = rand()%right_range + left_range;   //generates two random numbers in given range
+        q->number2 = rand()%right_range + left_range;
+        q->expected_result = q->number1 * q->number2;
+        break;
+    case '/':
+        q->expected_result = rand()%right_range + left_range;   //generates random number in given range
+        q->number2 = rand()%right_range + left_range;
+        q->number1 = q->number2 * q->expected_result;
+    default:
+        break;
+    }
+    
+    q->answered_correctly = false;
+    q->operation = operation;
 }
 
 void init_play()
@@ -293,10 +475,10 @@ void save_settings()
     
     settings = json_object_new_object();
 
-    dif = json_object_new_double(difficulty);
+    dif = json_object_new_int(difficulty);
     json_object_object_add(settings, "difficulty", dif);
 
-    len = json_object_new_double(length);
+    len = json_object_new_int(length);
     json_object_object_add(settings, "length", len);
 
     json_object_to_file("settings.json", settings);
@@ -316,8 +498,8 @@ void read_settings()
     {
         dif = json_object_object_get(settings, "difficulty");
         len = json_object_object_get(settings, "length");
-        difficulty = json_object_get_double(dif);
-        length = json_object_get_double(len);
+        difficulty = json_object_get_int(dif);
+        length = json_object_get_int(len);
     }
     else
     {
