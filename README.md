@@ -7,7 +7,7 @@ Game that helps you learn math operations (addition, subtraction, multiplication
   - Main menu with four buttons ✔️
   - Options panel with two sliders ✔️
   - Panel to choose game type ✔️
-  - Panel to choose operation ❌
+  - Panel to choose operation ✔️
   - Question window ❌
   - Good answer window ❌
   - Bad answer window ❌
@@ -20,7 +20,6 @@ Game that helps you learn math operations (addition, subtraction, multiplication
   - Learning game type ❌
   - Test game type ❌
   - Arcade game type ❌
-  - Switching between all panels ❌
   
 # Game types
 
