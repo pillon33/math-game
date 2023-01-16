@@ -57,5 +57,5 @@ This option adjusts the difficulty. This means that in each question result rang
   
 ### Hard
   - Range <50, 150> for addition and subtraction.
-  - Range <100, 1000> for multiplication.
+  - Range <100, 10 000> for multiplication.
   - Range <20, 60> for division.
