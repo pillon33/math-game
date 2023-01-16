@@ -52,7 +52,7 @@ This option adjusts the difficulty. This means that in each question result rang
   
 ### Medium
   - Range <30, 100> for addition and subtraction.
-  - Range <50, 200> for multiplication.
+  - Range <49, 400> for multiplication.
   - Range <10, 40> for division.
   
 ### Hard
