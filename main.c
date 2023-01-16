@@ -32,6 +32,48 @@ void minus();
 void mult();
 void division();
 void mixed();
+void question();
+void good_answer();
+void bad_answer();
+
+void question()
+{
+    GtkWidget *label;
+    GtkWidget *entry;
+
+    gtk_widget_destroy(fixed);
+
+    fixed = gtk_fixed_new();
+
+    gtk_container_add(GTK_CONTAINER(window), fixed);
+
+
+    label = gtk_label_new("2 + 2 = ?");
+    gtk_fixed_put(GTK_FIXED(fixed), label, 350, 200);
+
+    entry = gtk_entry_new();
+    gtk_widget_set_size_request(entry, 160, 32);
+    g_signal_connect (entry, "activate", G_CALLBACK (good_answer), NULL);
+    gtk_fixed_put(GTK_FIXED(fixed), entry, 310, 220);
+
+    gtk_window_set_focus(GTK_WINDOW(window), entry);
+
+    gtk_widget_show_all(window);
+
+    g_signal_connect(G_OBJECT(window), "destroy",
+            G_CALLBACK(gtk_main_quit), NULL);
+}
+
+void good_answer()
+{
+    // code //
+    printf("dziala");
+}
+
+void bad_answer()
+{
+    // code //
+}
 
 // function called when learning game type is chosen
 void learn()
@@ -125,27 +167,32 @@ void init_operation_choice()
 
 void plus()
 {
-    operation = '+';
+    operation = "+";
+    question();
 }
 
 void minus()
 {
-    operation = '-';
+    operation = "-";
+    question();
 }
 
 void mult()
 {
-    operation = '/';
+    operation = "/";
+    question();
 }
 
 void division()
 {
-    operation = '*';
+    operation = "*";
+    question();
 }
 
 void mixed()
 {
-    operation = 'mixed';
+    operation = "mixed";
+    question();
 }
 
 void init_play()
