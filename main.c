@@ -13,6 +13,7 @@ GtkWidget *entry;
 
 int difficulty = 1;  //value of game difficulty
 int length = 1;      //value of game length
+int correct_answers;
 
 int ranges[3][4][2] = {
     // add       sub        mult         div
@@ -43,7 +44,8 @@ typedef struct Question
 Question *head = NULL;     //head of linked list
 Question *tail = NULL;     //tail of linked list
 Question *iter = NULL;     //current question
-typedef struct Question *node;        //linked list node
+Question *buf = NULL;
+typedef struct Question node;        //linked list node
 
 char *game;         //string determinig game type
 char operation;    //string determinig which operation user wants to focus on
@@ -55,9 +57,6 @@ void init_operation_choice();
 void settings_back();
 void save_settings();
 void read_settings();
-void init_leaderboard();
-void save_leaderboard();
-void read_leaderboard();
 void plus();
 void minus();
 void mult();
@@ -67,11 +66,52 @@ void init_question();
 void answer();
 void get_question();
 void generate_questions();
+void init_evaluate_learn();
+void init_evaluate_test();
+void init_evaluate_arcade();
+void test();
+void learn();
+void clear_questions();
 
 void init_question()
 {
     GtkWidget *label;
 
+    //go to next question that user didn't answer
+    while ((iter != NULL) && (iter->answered_correctly))
+    {
+        iter = iter->next;
+    }
+
+    //if there are no more questions
+    if (iter == NULL)
+    {
+        if (strcmp(game, "learn") == 0)
+        {
+            if (correct_answers == length*5)
+            {
+                init_evaluate_learn();
+                return;
+            }
+            else
+            {
+                iter = tail;
+            }
+        }
+        else
+        {
+            init_evaluate_test();
+            return;
+        }
+    }
+
+    //go to next question that user didn't answer
+    while ((iter->answered_correctly))
+    {
+        iter = iter->next;
+    }
+    
+    
     gtk_widget_destroy(fixed);
 
     fixed = gtk_fixed_new();
@@ -96,6 +136,109 @@ void init_question()
             G_CALLBACK(gtk_main_quit), NULL);
 }
 
+void init_evaluate_learn()
+{
+    GtkWidget *label;
+    GtkWidget *image;
+    GtkWidget *button;
+    GdkPixbuf *pixbuf;
+
+    char *path;
+    char *text;
+
+    clear_questions();
+
+    path = "./resources/learning_finished.jpg";
+
+    gtk_widget_destroy(fixed);
+
+    fixed = gtk_fixed_new();
+
+    gtk_container_add(GTK_CONTAINER(window), fixed);
+
+    pixbuf = gdk_pixbuf_new_from_file(path, NULL);
+
+    pixbuf = gdk_pixbuf_scale_simple(pixbuf, 423, 283, GDK_INTERP_BILINEAR);
+
+    image = gtk_image_new_from_pixbuf(pixbuf);
+
+    gtk_fixed_put(GTK_FIXED(fixed), image, 200, 40);
+
+    text = g_strdup_printf("Nauka zakończona, kontynuuj lub przejdź do testu", correct_answers, length*5);
+    label = gtk_label_new(text);
+    gtk_fixed_put(GTK_FIXED(fixed), label, 200, 350);
+
+    button = gtk_button_new_with_label("Kontynuuj");
+    gtk_widget_set_size_request(button, 160, 32);
+    gtk_fixed_put(GTK_FIXED(fixed), button, 310, 400);
+    g_signal_connect (button, "clicked", G_CALLBACK (init_menu), NULL);
+
+    button = gtk_button_new_with_label("Przejdź do testu");
+    gtk_widget_set_size_request(button, 160, 32);
+    gtk_fixed_put(GTK_FIXED(fixed), button, 310, 450);
+    g_signal_connect (button, "clicked", G_CALLBACK (test), NULL);
+
+    gtk_widget_show_all(window);
+
+    g_signal_connect(G_OBJECT(window), "destroy",
+            G_CALLBACK(gtk_main_quit), NULL);
+}
+
+void init_evaluate_test()
+{
+    GtkWidget *label;
+    GtkWidget *image;
+    GtkWidget *button;
+    GdkPixbuf *pixbuf;
+
+    clear_questions();
+
+    double score = ((double)correct_answers/(length*5))*100;
+    bool passed = score >= 80.0;
+    char *path;
+    char *text;
+
+    path = "./resources/failed.jpg";
+
+    if (passed)
+    {
+        path = "./resources/passed.jpg";
+    }
+    
+    gtk_widget_destroy(fixed);
+
+    fixed = gtk_fixed_new();
+
+    gtk_container_add(GTK_CONTAINER(window), fixed);
+
+    pixbuf = gdk_pixbuf_new_from_file(path, NULL);
+
+    pixbuf = gdk_pixbuf_scale_simple(pixbuf, 200, 200, GDK_INTERP_BILINEAR);
+
+    image = gtk_image_new_from_pixbuf(pixbuf);
+
+    gtk_fixed_put(GTK_FIXED(fixed), image, 300, 80);
+
+    text = g_strdup_printf("Odpowiedziałeś poprawnie na %d/%d pytań", correct_answers, length*5);
+    label = gtk_label_new(text);
+    gtk_fixed_put(GTK_FIXED(fixed), label, 270, 350);
+
+    button = gtk_button_new_with_label("Kontynuuj");
+    gtk_widget_set_size_request(button, 160, 32);
+    gtk_fixed_put(GTK_FIXED(fixed), button, 310, 400);
+    g_signal_connect (button, "clicked", G_CALLBACK (init_menu), NULL);
+
+    button = gtk_button_new_with_label("Spróbuj ponownie");
+    gtk_widget_set_size_request(button, 160, 32);
+    gtk_fixed_put(GTK_FIXED(fixed), button, 310, 450);
+    g_signal_connect (button, "clicked", G_CALLBACK (test), NULL);
+
+    gtk_widget_show_all(window);
+
+    g_signal_connect(G_OBJECT(window), "destroy",
+            G_CALLBACK(gtk_main_quit), NULL);
+}
+
 void answer()
 {
     GtkWidget *image;
@@ -111,6 +254,7 @@ void answer()
     if (strcmp(ans, expected) == 0)
     {
         iter->answered_correctly = true;
+        correct_answers++;
     }
 
     gtk_widget_destroy(fixed);
@@ -146,8 +290,39 @@ void answer()
 
     g_signal_connect(G_OBJECT(window), "destroy",
             G_CALLBACK(gtk_main_quit), NULL);
-
+    
+    // if ((iter->answered_correctly) && (strcmp(game, "learn")==0))
+    // {
+    //     if(iter->next == NULL)
+    //     {
+    //         head = iter->prev;
+    //     }
+    //     if(iter->prev == NULL)
+    //     {
+    //         tail = iter->next;
+    //     }
+    //     iter->next->prev = iter->prev;
+    //     iter->prev->next = iter->next;
+    // }
+    // buf = iter;
+    // iter = iter->next;
+    // //free(buf);
     iter = iter->next;
+}
+
+void clear_questions()
+{
+    node* tmp;
+
+   while (tail != NULL)
+    {
+       tmp = tail;
+       tail = tail->next;
+       free(tmp);
+    }
+
+    head = NULL;
+    iter = NULL;
 }
 
 // function called when learning game type is chosen
@@ -161,16 +336,10 @@ void learn()
 // function called when test game type is chosen
 void test()
 {
-    read_settings();    //update all game parameters
-    game = "test";      //set game type
+    read_settings();        //update all game parameters
+    game = "test";          //set game type
+    correct_answers = 0;    //reset after previous test
     init_operation_choice();
-}
-
-// function called when arcade game type is chosen
-void arcade()
-{
-    read_settings();    //update all game parameters
-    game = "arcade";    //set game type
 }
 
 void init_operation_choice()
@@ -329,7 +498,6 @@ void mixed()
 void get_question()
 {
     int idx;
-    int delta;
 
     //get value range from table
     switch (operation)
@@ -352,8 +520,8 @@ void get_question()
     int left_range = ranges[difficulty-1][idx][0];
     int right_range = ranges[difficulty-1][idx][1];
 
-    node q;
-    q = (node)malloc(sizeof(struct Question)); // allocate memory using malloc()
+    node* q;
+    q = (node*)malloc(sizeof(struct Question)); // allocate memory using malloc()
 
     q->next = NULL;
     q->prev = NULL;
@@ -426,22 +594,13 @@ void init_play()
     gtk_fixed_put(GTK_FIXED(fixed), button, 310, 200);
 
     //create third button
-    button = gtk_button_new_with_label("Arcade");
-    g_signal_connect (button, "clicked", G_CALLBACK (arcade), NULL);
+    button = gtk_button_new_with_label("Powrót");
+    g_signal_connect (button, "clicked", G_CALLBACK (init_menu), NULL);
 
     gtk_widget_set_size_request(button, 160, 32);
 
     //attach third button 
     gtk_fixed_put(GTK_FIXED(fixed), button, 310, 250);
-
-    //create fourth button
-    button = gtk_button_new_with_label("Powrot");
-    g_signal_connect (button, "clicked", G_CALLBACK (init_menu), NULL);
-
-    gtk_widget_set_size_request(button, 160, 32);
-
-    //attach fourth button 
-    gtk_fixed_put(GTK_FIXED(fixed), button, 310, 300);
 
     gtk_widget_show_all(window);
 
@@ -567,12 +726,6 @@ void init_settings()
     gtk_widget_show_all(window);
 }
 
-//menu button 2 (Leaderboard)
-void menu_b2(GtkWidget *button, GtkWidget *fixed)
-{
-    // code //
-}
-
 void init_window()
 {
     //setup window
@@ -610,8 +763,8 @@ void init_menu()
     gtk_fixed_put(GTK_FIXED(fixed), button, 310, 150);
 
     //create second button
-    button = gtk_button_new_with_label("Wyniki");
-    g_signal_connect (button, "clicked", G_CALLBACK (menu_b2), NULL);
+    button = gtk_button_new_with_label("Ustawienia");
+    g_signal_connect (button, "clicked", G_CALLBACK (init_settings), NULL);
 
     gtk_widget_set_size_request(button, 160, 32);
 
@@ -619,22 +772,13 @@ void init_menu()
     gtk_fixed_put(GTK_FIXED(fixed), button, 310, 200);
 
     //create third button
-    button = gtk_button_new_with_label("Ustawienia");
-    g_signal_connect (button, "clicked", G_CALLBACK (init_settings), NULL);
-
-    gtk_widget_set_size_request(button, 160, 32);
-
-    //attach third button 
-    gtk_fixed_put(GTK_FIXED(fixed), button, 310, 250);
-
-    //create fourth button
     button = gtk_button_new_with_label("Wyjscie");
     g_signal_connect (button, "clicked", G_CALLBACK (gtk_main_quit), NULL);
 
     gtk_widget_set_size_request(button, 160, 32);
 
-    //attach fourth button 
-    gtk_fixed_put(GTK_FIXED(fixed), button, 310, 300);
+    //attach third button 
+    gtk_fixed_put(GTK_FIXED(fixed), button, 310, 250);
 
     gtk_widget_show_all(window);
 

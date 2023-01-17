@@ -11,15 +11,11 @@ Game that helps you learn math operations (addition, subtraction, multiplication
   - Question window ✔️
   - Good answer window ✔️
   - Bad answer window ✔️
-  - Leaderboard tab ❌
-  - Entering initials for leaderboard ❌
   
 ## Backend
   - Saving and loadnig options from a file ✔️
-  - Saving and loading best scores from a file ❌
   - Learning game type ✔️
   - Test game type ✔️
-  - Arcade game type ❌
   
 # Game types
 
