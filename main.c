@@ -42,10 +42,9 @@ typedef struct Question
 }Question;
 
 Question *head = NULL;     //head of linked list
-Question *tail = NULL;     //tail of linked list
 Question *iter = NULL;     //current question
 Question *buf = NULL;
-typedef struct Question node;        //linked list node
+typedef struct Question *node;        //linked list node
 
 char *game;         //string determinig game type
 char operation;    //string determinig which operation user wants to focus on
@@ -72,6 +71,11 @@ void init_evaluate_arcade();
 void test();
 void learn();
 void clear_questions();
+void arcade();
+void evaluate_arcade();
+void init_leaderboard();
+void save_leaderboard();
+void read_leaderboard();
 
 void init_question()
 {
@@ -95,7 +99,7 @@ void init_question()
             }
             else
             {
-                iter = tail;
+                iter = head;
             }
         }
         else
@@ -290,46 +294,31 @@ void answer()
 
     g_signal_connect(G_OBJECT(window), "destroy",
             G_CALLBACK(gtk_main_quit), NULL);
-    
-    // if ((iter->answered_correctly) && (strcmp(game, "learn")==0))
-    // {
-    //     if(iter->next == NULL)
-    //     {
-    //         head = iter->prev;
-    //     }
-    //     if(iter->prev == NULL)
-    //     {
-    //         tail = iter->next;
-    //     }
-    //     iter->next->prev = iter->prev;
-    //     iter->prev->next = iter->next;
-    // }
-    // buf = iter;
-    // iter = iter->next;
-    // //free(buf);
+
+
     iter = iter->next;
 }
 
 void clear_questions()
 {
-    node* tmp;
+    node tmp;
 
-   while (tail != NULL)
+    while (head != NULL)
     {
-       tmp = tail;
-       tail = tail->next;
-       free(tmp);
+        tmp = head;
+        head = head->next;
+        free(tmp);
     }
 
-    head = NULL;
     iter = NULL;
 }
 
 // function called when learning game type is chosen
 void learn()
 {
-    read_settings();    //update all game parameters
-    game = "learn";     //set game type
+    read_settings();        //update all game parameters
+    game = "learn";         //set game type
+    correct_answers = 0;    //reset after previous game
     init_operation_choice();
 }
 
@@ -338,7 +327,7 @@ void test()
 {
     read_settings();        //update all game parameters
     game = "test";          //set game type
-    correct_answers = 0;    //reset after previous test
+    correct_answers = 0;    //reset after previous game
     init_operation_choice();
 }
 
@@ -416,12 +405,11 @@ void generate_questions()
 {
     //reset state after previous game
     head = NULL;
-    tail = NULL;
     iter = NULL;
 
     //generating questions
     get_question();
-    tail = iter;        //first element
+    head = iter;        //first element
 
     for (int i = 0; i < length*5 - 1; i++)
     {
@@ -429,8 +417,7 @@ void generate_questions()
     }
     //finished generating questions
 
-    head = iter;        //last element
-    iter = tail;        //reset iterator before the game
+    iter = head;        //reset iterator before the game
 }
 
 void plus()
@@ -473,13 +460,12 @@ void mixed()
 {
     //reset state after previous game
     head = NULL;
-    tail = NULL;
     iter = NULL;
 
     //generating questions
     operation = operations[rand()%4];
-    get_question();
-    tail = iter;        //first element
+    get_question();    
+    head = iter;
 
     for (int i = 0; i < length*5 - 1; i++)
     {
@@ -488,8 +474,7 @@ void mixed()
     }
     //finished generating questions
 
-    head = iter;        //last element
-    iter = tail;        //reset iterator before the game
+    iter = head;        //reset iterator before the game
 
     init_question();
 }
@@ -520,17 +505,15 @@ void get_question()
     int left_range = ranges[difficulty-1][idx][0];
     int right_range = ranges[difficulty-1][idx][1];
 
-    node* q;
-    q = (node*)malloc(sizeof(struct Question)); // allocate memory using malloc()
+    node q;
+    q = (node)malloc(sizeof(struct Question)); // allocate memory using malloc()
 
     q->next = NULL;
-    q->prev = NULL;
 
     //make linked list connection
     if (iter)
     {
         iter->next = q;
-        q->prev = iter;
     }
     
     iter = q;
