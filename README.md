@@ -14,8 +14,10 @@ Game that helps you learn math operations (addition, subtraction, multiplication
   
 ## Backend
   - Saving and loadnig options from a file ✔️
+  - Saving and loadnig leaderboards from a file ✔️
   - Learning game type ✔️
   - Test game type ✔️
+  - Arcade game type ✔️
   
 # Game types
 
