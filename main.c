@@ -4,16 +4,18 @@
 #include <time.h>
 #include <json-c/json.h>
 #include <stdbool.h>
+#include <ctype.h>
 
 GtkWidget *window;
 GtkWidget *fixed;
 GtkWidget *slider1;     //Game difficulty slider
 GtkWidget *slider2;     //Game length slider
 GtkWidget *entry;
+GtkWidget *grid;
 
 int difficulty = 1;  //value of game difficulty
 int length = 1;      //value of game length
-int correct_answers;
+int correct_answers = 10;
 
 int ranges[3][4][2] = {
     // add       sub        mult         div
@@ -24,7 +26,7 @@ int ranges[3][4][2] = {
 
 char operations[4] = {'+', '-', '*', '/'};
 
-json_object *ldboard;   //json object storing leaderboard data
+json_object *ldboard = NULL;   //json object storing leaderboard data
 
 
 //structure representing question 
@@ -45,6 +47,15 @@ Question *head = NULL;     //head of linked list
 Question *iter = NULL;     //current question
 Question *buf = NULL;
 typedef struct Question *node;        //linked list node
+
+//structure representing one entry in leaderboard
+typedef struct LeaderEntry
+{
+    int pos;
+    char *name;
+    int score;
+}LeaderEntry;
+
 
 char *game;         //string determinig game type
 char operation;    //string determinig which operation user wants to focus on
@@ -76,6 +87,10 @@ void evaluate_arcade();
 void init_leaderboard();
 void save_leaderboard();
 void read_leaderboard();
+void default_leaderboard();
+void init_add_to_leaderboard();
+void add_to_leaderboard();
+void set_name(GtkWidget *_, json_object *leader);
 
 void init_question()
 {
@@ -716,7 +731,6 @@ void init_window()
     gtk_window_set_title(GTK_WINDOW(window), "Math Game");
     gtk_window_set_default_size(GTK_WINDOW(window), 800, 600);
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
-    gtk_container_set_border_width(GTK_CONTAINER(window), 10);
     gtk_window_set_resizable(GTK_WINDOW(window), FALSE);
 }
 
@@ -755,13 +769,22 @@ void init_menu()
     gtk_fixed_put(GTK_FIXED(fixed), button, 310, 200);
 
     //create third button
-    button = gtk_button_new_with_label("Wyjscie");
-    g_signal_connect (button, "clicked", G_CALLBACK (gtk_main_quit), NULL);
+    button = gtk_button_new_with_label("Wyniki");
+    g_signal_connect (button, "clicked", G_CALLBACK (add_to_leaderboard), NULL);
 
     gtk_widget_set_size_request(button, 160, 32);
 
     //attach third button 
     gtk_fixed_put(GTK_FIXED(fixed), button, 310, 250);
+
+    //create fourth button
+    button = gtk_button_new_with_label("Wyjscie");
+    g_signal_connect (button, "clicked", G_CALLBACK (gtk_main_quit), NULL);
+
+    gtk_widget_set_size_request(button, 160, 32);
+
+    //attach fourth button 
+    gtk_fixed_put(GTK_FIXED(fixed), button, 310, 300);
 
     gtk_widget_show_all(window);
 
@@ -769,6 +792,314 @@ void init_menu()
             G_CALLBACK(gtk_main_quit), NULL);
 }
 
+void default_leaderboard()
+{
+    json_object *leader_pos;
+    json_object *name;
+    json_object *score;
+
+    char str[3];
+
+    ldboard = json_object_new_object();
+
+    name = json_object_new_string("------");
+    score = json_object_new_int(0);
+
+    for (int i = 0; i < 10; i++)
+    {
+        sprintf(str, "%d", i+1);
+        leader_pos = (json_object*)malloc(sizeof(json_object*));
+        leader_pos = json_object_new_object();
+
+        json_object_object_add(leader_pos, "name", name);
+        json_object_object_add(leader_pos, "score", score);
+        json_object_object_add(leader_pos, "pos", json_object_new_int(i+1));
+        json_object_object_add(ldboard, str, leader_pos);
+    }
+}
+
+void save_leaderboard()
+{
+    //creates default data if it's not provided
+    if (!ldboard)
+    {
+        default_leaderboard();
+    }
+    json_object_to_file("leaderboard.json", ldboard);
+}
+
+void read_leaderboard()
+{
+    ldboard = json_object_from_file("leaderboard.json");
+
+    if (!ldboard)
+    {
+        default_leaderboard();
+        save_leaderboard();
+    }
+}
+
+void init_leaderboard()
+{
+    int column_width = 100;
+    int column_height = 20;
+    int x_pos = (800 - 3*column_width)/2;
+    int y_pos = (600 - 16*column_height)/2;
+
+    GtkWidget *button;
+
+    read_leaderboard();
+
+    gtk_widget_destroy(fixed);
+
+    fixed = gtk_fixed_new();
+    gtk_container_add(GTK_CONTAINER(window), fixed);
+
+    // Create the labels for the header row
+    GtkWidget *position_label = gtk_label_new("Pozycja");
+    GtkWidget *name_label = gtk_label_new("Imie");
+    GtkWidget *score_label = gtk_label_new("Wynik");
+
+    // Add the header labels to the fixed container
+    gtk_fixed_put(GTK_FIXED(fixed), position_label, \
+                 x_pos, y_pos);
+
+    gtk_fixed_put(GTK_FIXED(fixed), name_label, \
+                 x_pos \
+                 + column_width + 10, y_pos);
+
+    gtk_fixed_put(GTK_FIXED(fixed), score_label, \
+                 x_pos \
+                 + column_width \
+                 + column_width + 20, y_pos);
+
+    // Create the labels for the 10 positions
+    GtkWidget *position_labels[10], *name_labels[10], *score_labels[10];
+    y_pos += 2*column_height;
+
+    // Create objects to store json data
+    json_object *name, *score, *leader;
+
+    for (int i = 0; i < 10; i++) 
+    {
+        // Get data from json object
+        leader = json_object_object_get(ldboard, g_strdup_printf("%d", i+1));
+        name = json_object_object_get(leader, "name");
+        score = json_object_object_get(leader, "score");
+
+        position_labels[i] = gtk_label_new(g_strdup_printf("%d.", i+1));
+        name_labels[i] = gtk_label_new(json_object_get_string(name));
+        score_labels[i] = gtk_label_new(g_strdup_printf("%d pkt", json_object_get_int(score)));
+
+        // Add the labels to the fixed container
+        gtk_fixed_put(GTK_FIXED(fixed), position_labels[i], \
+                     x_pos + column_width/4, y_pos);
+
+        gtk_fixed_put(GTK_FIXED(fixed), name_labels[i], \
+                     x_pos \
+                     + column_width + 10, y_pos);
+
+        gtk_fixed_put(GTK_FIXED(fixed), score_labels[i], \
+                     x_pos \
+                     + column_width \
+                     + column_width + 20, y_pos);
+        y_pos += column_height;
+    }
+
+    button = gtk_button_new_with_label("Kontynuuj");
+    g_signal_connect (button, "clicked", G_CALLBACK (init_menu), NULL);
+    gtk_widget_set_size_request(button, 160, 32);
+    gtk_fixed_put(GTK_FIXED(fixed), button, x_pos + (3*column_width + 20)/2 - 100, y_pos+20);
+    
+
+    // Add the table to the fixed container
+    gtk_widget_show_all(window);
+}
+
+void init_add_to_leaderboard(int pos, int sc)
+{
+    int column_width = 100;
+    int column_height = 20;
+    int x_pos = (800 - 3*column_width)/2;
+    int y_pos = (600 - 16*column_height)/2;
+
+    json_object *leader = json_object_new_object();
+    json_object_object_add(leader, "name", json_object_new_string("-----"));
+    json_object_object_add(leader, "score", json_object_new_int(sc));
+    json_object_object_add(leader, "pos", json_object_new_int(pos));
+
+    gtk_widget_destroy(fixed);
+
+    fixed = gtk_fixed_new();
+    gtk_container_add(GTK_CONTAINER(window), fixed);
+
+    // Create the labels for the header row
+    GtkWidget *position_label = gtk_label_new("Pozycja");
+    GtkWidget *name_label = gtk_label_new("Imie");
+    GtkWidget *score_label = gtk_label_new("Wynik");
+    GtkWidget *label = gtk_label_new("Wprowadź swój nick (max 3 litery)");
+
+    gtk_fixed_put(GTK_FIXED(fixed), label, 250, y_pos - column_height - 10);
+
+    // Add the header labels to the fixed container
+    gtk_fixed_put(GTK_FIXED(fixed), position_label, \
+                 x_pos, y_pos);
+
+    gtk_fixed_put(GTK_FIXED(fixed), name_label, \
+                 x_pos \
+                 + column_width + 10, y_pos);
+
+    gtk_fixed_put(GTK_FIXED(fixed), score_label, \
+                 x_pos \
+                 + column_width \
+                 + column_width + 20, y_pos);
+
+    // Create the labels for the 10 positions
+    GtkWidget *position_labels[10], *name_labels[10], *score_labels[10];
+    entry = gtk_entry_new();
+    gtk_entry_set_width_chars(GTK_ENTRY(entry), 3);
+    gtk_entry_set_max_length(GTK_ENTRY(entry), 3);
+    g_signal_connect (entry, "activate", G_CALLBACK (set_name), leader);
+    
+
+    y_pos += 2*column_height;
+
+    // Create objects to store json data
+    json_object *name, *score, *ld;
+
+    for (int i = 0; i < 10; i++) 
+    {
+        // Get data from json object
+        ld = json_object_object_get(ldboard, g_strdup_printf("%d", i+1));
+        name = json_object_object_get(ld, "name");
+        score = json_object_object_get(ld, "score");
+
+        position_labels[i] = gtk_label_new(g_strdup_printf("%d.", i+1));
+        name_labels[i] = gtk_label_new(json_object_get_string(name));
+        score_labels[i] = gtk_label_new(g_strdup_printf("%d pkt", json_object_get_int(score)));
+
+        if (i+1 == pos)
+        {
+            gtk_fixed_put(GTK_FIXED(fixed), position_labels[i], \
+                     x_pos + column_width/4, y_pos);
+
+            gtk_fixed_put(GTK_FIXED(fixed), entry, \
+                        x_pos \
+                        + column_width, y_pos - 10);
+
+            gtk_fixed_put(GTK_FIXED(fixed), score_labels[i], \
+                        x_pos \
+                        + column_width \
+                        + column_width + 20, y_pos);
+            y_pos += column_height;
+            continue;
+        }
+        
+
+        // Add the labels to the fixed container
+        gtk_fixed_put(GTK_FIXED(fixed), position_labels[i], \
+                     x_pos + column_width/4, y_pos);
+
+        gtk_fixed_put(GTK_FIXED(fixed), name_labels[i], \
+                     x_pos \
+                     + column_width + 10, y_pos);
+
+        gtk_fixed_put(GTK_FIXED(fixed), score_labels[i], \
+                     x_pos \
+                     + column_width \
+                     + column_width + 20, y_pos);
+        y_pos += column_height;
+    }
+    gtk_window_set_focus(GTK_WINDOW(window), entry);
+
+    gtk_widget_show_all(window);
+}
+
+void str_toupper(char str[])
+{
+    int j = 0;
+    char ch;
+ 
+    while (str[j]) {
+        ch = str[j];
+        str[j] = toupper(ch);
+        j++;
+    }
+}
+
+void set_name(GtkWidget *_, json_object *leader)
+{
+    char name[4];
+    strcpy(name, gtk_entry_get_text(GTK_ENTRY(entry)));
+
+    if (strcmp(name, "") == 0)
+    {
+        return;
+    }
+    
+    str_toupper(name);
+
+    json_object_object_add(leader, "name", json_object_new_string(name));
+    int pos = json_object_get_int(json_object_object_get(leader, "pos"));
+
+    json_object *tmp1, *tmp2,  *newld;
+    newld = json_object_new_object();
+    tmp2 = (json_object*)malloc(sizeof(json_object*));
+    tmp2 = leader;
+
+    for (int i = 0; i < pos-1; i++)
+    {
+        tmp1 = (json_object*)malloc(sizeof(json_object*));
+        tmp1 = json_object_object_get(ldboard, g_strdup_printf("%i", i+1));
+        json_object_object_add(newld, g_strdup_printf("%i", i+1), tmp1);
+    }
+
+    for (int i = pos-1; i < 10; i++)
+    {
+        tmp1 = json_object_object_get(ldboard, g_strdup_printf("%i", i+1));
+        json_object_object_add(tmp1, "pos", json_object_new_int(i+2));
+        json_object_object_add(newld, g_strdup_printf("%i", i+1), tmp2);
+        tmp2 = (json_object*)malloc(sizeof(json_object*));
+        tmp2 = tmp1;
+    }
+
+    ldboard = newld;
+    
+    save_leaderboard();
+    init_leaderboard();
+}
+
+void add_to_leaderboard()
+{
+    int sc = correct_answers*10*difficulty;
+    json_object *leader;
+    int score;
+    int pos = 10;
+
+    leader = json_object_object_get(ldboard, g_strdup_printf("%d", pos));
+    score = json_object_get_int(json_object_object_get(leader, "score"));
+
+    while ((pos > 0) && (score < sc))
+    {
+        leader = json_object_object_get(ldboard, g_strdup_printf("%d", pos--));
+        score = json_object_get_int(json_object_object_get(leader, "score"));
+    }
+    pos++;
+
+    // if player doesn't qualify for leaderboard
+    if (pos > 10)
+    {
+        init_leaderboard();
+        return;
+    }
+    
+    if (score >= pos)
+    {
+        pos++;
+    }
+
+    init_add_to_leaderboard(pos, sc);
+}
 
 int main(int argc, char *argv[]) 
 {
@@ -777,6 +1108,8 @@ int main(int argc, char *argv[])
     gtk_init(&argc, &argv);
 
     init_window();
+
+    read_leaderboard();
 
     init_menu();
 
