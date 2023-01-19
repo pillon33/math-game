@@ -5,6 +5,7 @@
 #include <json-c/json.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include <time.h>
 
 GtkWidget *window;
 GtkWidget *fixed;
@@ -15,7 +16,7 @@ GtkWidget *grid;
 
 int difficulty = 1;  //value of game difficulty
 int length = 1;      //value of game length
-int correct_answers = 10;
+int correct_answers = 20;
 
 int ranges[3][4][2] = {
     // add       sub        mult         div
@@ -48,14 +49,10 @@ Question *iter = NULL;     //current question
 Question *buf = NULL;
 typedef struct Question *node;        //linked list node
 
-//structure representing one entry in leaderboard
-typedef struct LeaderEntry
-{
-    int pos;
-    char *name;
-    int score;
-}LeaderEntry;
-
+//arcade parameters
+time_t start_time = 0;
+time_t max_time = 30;
+bool valid_run = true;
 
 char *game;         //string determinig game type
 char operation;    //string determinig which operation user wants to focus on
@@ -95,6 +92,16 @@ void set_name(GtkWidget *_, json_object *leader);
 void init_question()
 {
     GtkWidget *label;
+
+    if(strcmp(game, "arcade") == 0)
+    {
+        start_time = time(NULL);
+        if ((start_time == max_time) || (!valid_run))
+        {
+            init_evaluate_arcade();
+            return;
+        }
+    }
 
     //go to next question that user didn't answer
     while ((iter != NULL) && (iter->answered_correctly))
@@ -258,6 +265,49 @@ void init_evaluate_test()
             G_CALLBACK(gtk_main_quit), NULL);
 }
 
+void init_evaluate_arcade()
+{
+    GtkWidget *label;
+    GtkWidget *image;
+    GtkWidget *button;
+    GdkPixbuf *pixbuf;
+
+    char *path;
+    char *text;
+
+    clear_questions();
+
+    path = "./resources/arcade_finish.jpg";
+
+    gtk_widget_destroy(fixed);
+
+    fixed = gtk_fixed_new();
+
+    gtk_container_add(GTK_CONTAINER(window), fixed);
+
+    pixbuf = gdk_pixbuf_new_from_file(path, NULL);
+
+    pixbuf = gdk_pixbuf_scale_simple(pixbuf, 420, 300, GDK_INTERP_BILINEAR);
+
+    image = gtk_image_new_from_pixbuf(pixbuf);
+
+    gtk_fixed_put(GTK_FIXED(fixed), image, 200, 40);
+
+    text = g_strdup_printf("Gra zakończona.", correct_answers, length*5);
+    label = gtk_label_new(text);
+    gtk_fixed_put(GTK_FIXED(fixed), label, 200, 350);
+
+    button = gtk_button_new_with_label("Kontynuuj");
+    gtk_widget_set_size_request(button, 160, 32);
+    gtk_fixed_put(GTK_FIXED(fixed), button, 310, 400);
+    g_signal_connect (button, "clicked", G_CALLBACK (add_to_leaderboard), NULL);
+
+    gtk_widget_show_all(window);
+
+    g_signal_connect(G_OBJECT(window), "destroy",
+            G_CALLBACK(gtk_main_quit), NULL);
+}
+
 void answer()
 {
     GtkWidget *image;
@@ -285,9 +335,11 @@ void answer()
     if (iter->answered_correctly)
     {
         path = "./resources/correct.jpg";
+        max_time += 5;
     }
     else
     {
+        valid_run = false;
         path = "./resources/incorrect.jpg";
     }
     
@@ -310,8 +362,16 @@ void answer()
     g_signal_connect(G_OBJECT(window), "destroy",
             G_CALLBACK(gtk_main_quit), NULL);
 
-
-    iter = iter->next;
+    if(strcmp(game, "arcade") == 0)
+    {
+        operation = operations[rand()%4];
+        free(iter);
+        get_question();
+    }
+    else
+    {
+        iter = iter->next;
+    }
 }
 
 void clear_questions()
@@ -494,6 +554,22 @@ void mixed()
     init_question();
 }
 
+void arcade()
+{
+    game = "arcade";
+    valid_run = true;
+    read_settings();        //update all game parameters
+    correct_answers = 0;
+
+    operation = operations[rand()%4];
+    get_question();
+
+    max_time = 15 + 15*length;
+    start_time = time(NULL);
+    max_time += start_time;
+    init_question();
+}
+
 //generates data for one question
 void get_question()
 {
@@ -592,13 +668,22 @@ void init_play()
     gtk_fixed_put(GTK_FIXED(fixed), button, 310, 200);
 
     //create third button
-    button = gtk_button_new_with_label("Powrót");
-    g_signal_connect (button, "clicked", G_CALLBACK (init_menu), NULL);
+    button = gtk_button_new_with_label("Arcade");
+    g_signal_connect (button, "clicked", G_CALLBACK (arcade), NULL);
 
     gtk_widget_set_size_request(button, 160, 32);
 
     //attach third button 
     gtk_fixed_put(GTK_FIXED(fixed), button, 310, 250);
+
+    //create fourth button
+    button = gtk_button_new_with_label("Powrót");
+    g_signal_connect (button, "clicked", G_CALLBACK (init_menu), NULL);
+
+    gtk_widget_set_size_request(button, 160, 32);
+
+    //attach fourth button 
+    gtk_fixed_put(GTK_FIXED(fixed), button, 310, 300);
 
     gtk_widget_show_all(window);
 
@@ -770,7 +855,7 @@ void init_menu()
 
     //create third button
     button = gtk_button_new_with_label("Wyniki");
-    g_signal_connect (button, "clicked", G_CALLBACK (add_to_leaderboard), NULL);
+    g_signal_connect (button, "clicked", G_CALLBACK (init_leaderboard), NULL);
 
     gtk_widget_set_size_request(button, 160, 32);
 
@@ -1093,7 +1178,7 @@ void add_to_leaderboard()
         return;
     }
     
-    if (score >= pos)
+    if (score >= sc)
     {
         pos++;
     }
@@ -1110,6 +1195,7 @@ int main(int argc, char *argv[])
     init_window();
 
     read_leaderboard();
+    read_settings();
 
     init_menu();
 
