@@ -29,8 +29,7 @@ Game type that evaluates users knowledge, user enters answer, and is only inform
 User is informed about correct answer percentage, if it is above 80% user passed the test.
 
 ## Arcade
-Game type that focuses mostly on rivlary between players. The goal is to answer correct to as many questions as possible, the game ends when incorrect answer is given
-or when the time is up. The score is the number of questions answered multiplied by 10, 20 or 30 depending on dificulty level. 
+Game type that focuses mostly on rivlary between players. The goal is to answer correct to as many questions as possible, the game ends when incorrect answer is given. The score is the number of questions answered multiplied by 10, 20 or 30 depending on dificulty level. 
 If user qualifies for TOP 10 then he must enter his intials and the score is saved to the leaderboard.
 
 # Options
@@ -38,7 +37,7 @@ There are two sliders to adjust game options, after leaving this tab all options
 default values if the file is missing.
 
 ## Game length
-This option adjusts game length (amount of questions in Normal and Test mode (5, 10 or 15 questions), time in Arcade mode (30, 45 or 60s after each correct answer 5s are added))
+This option adjusts game length (amount of questions in Normal and Test mode (5, 10 or 15 questions))
 
 ## Difficulty level
 This option adjusts the difficulty. This means that in each question result range will change. There are 3 options Easy, Medium and hard.
