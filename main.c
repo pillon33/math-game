@@ -96,7 +96,7 @@ void init_question()
     if(strcmp(game, "arcade") == 0)
     {
         start_time = time(NULL);
-        if ((start_time == max_time) || (!valid_run))
+        if ((start_time >= max_time) || (!valid_run))
         {
             init_evaluate_arcade();
             return;
@@ -190,7 +190,7 @@ void init_evaluate_learn()
 
     gtk_fixed_put(GTK_FIXED(fixed), image, 200, 40);
 
-    text = g_strdup_printf("Nauka zakończona, kontynuuj lub przejdź do testu", correct_answers, length*5);
+    text = g_strdup_printf("Nauka zakończona, kontynuuj lub przejdź do testu");
     label = gtk_label_new(text);
     gtk_fixed_put(GTK_FIXED(fixed), label, 200, 350);
 
@@ -293,7 +293,7 @@ void init_evaluate_arcade()
 
     gtk_fixed_put(GTK_FIXED(fixed), image, 200, 40);
 
-    text = g_strdup_printf("Gra zakończona.", correct_answers, length*5);
+    text = g_strdup_printf("Gra zakończona. Zdobyles %d punktow.", correct_answers*difficulty*10);
     label = gtk_label_new(text);
     gtk_fixed_put(GTK_FIXED(fixed), label, 200, 350);
 
@@ -335,7 +335,6 @@ void answer()
     if (iter->answered_correctly)
     {
         path = "./resources/correct.jpg";
-        max_time += 5;
     }
     else
     {
