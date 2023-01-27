@@ -1,7 +1,9 @@
 # Math Game
 Game that helps you learn math operations (addition, subtraction, multiplication and division).
 
-# TODO
+# Necessary libraries
+  - GTK 3
+  - json-c (https://github.com/json-c/json-c)
 
 ## Frontend
   - Main menu with four buttons ✔️
